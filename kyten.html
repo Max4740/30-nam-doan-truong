@@ -7,9 +7,11 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: 'Segoe UI', Tahoma, sans-serif; min-height: 100vh;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      height: 100vh; height: 100dvh;
       background: linear-gradient(135deg, #001f3f, #003366, #005BAA); color: #fff;
-      overflow: hidden; touch-action: none;
+      overflow: hidden;
+      display: flex; flex-direction: column;
     }
     #login-section { display: flex; justify-content: center; align-items: center; min-height: 100vh; }
     .login-card {
@@ -32,10 +34,11 @@
     }
     .error-text { color: #ff6b6b; margin-top: 8px; font-size: 14px; min-height: 20px; }
 
-    #main-section { display: none; height: 100vh; flex-direction: column; }
+    #main-section { display: none; flex: 1; flex-direction: column; overflow: hidden; min-height: 0; }
     .top-bar {
-      padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 16px; display: flex; justify-content: space-between; align-items: center;
       background: rgba(0,0,0,0.3); border-bottom: 2px solid #FFD700;
+      flex-shrink: 0;
     }
     .top-bar h2 { font-size: 16px; }
     .top-bar h2 span { color: #FFD700; }
@@ -50,7 +53,8 @@
 
     .canvas-wrap {
       flex: 1; display: flex; justify-content: center; align-items: center;
-      padding: 16px; background: rgba(0,0,0,0.2);
+      padding: 12px; background: rgba(0,0,0,0.2);
+      min-height: 0; overflow: hidden;
     }
     canvas {
       background: #fff; border-radius: 12px;
@@ -59,6 +63,7 @@
     }
     .bottom-bar {
       padding: 12px 20px; display: flex; gap: 12px; background: rgba(0,0,0,0.3);
+      flex-shrink: 0;
     }
     .bottom-bar button {
       flex: 1; padding: 14px; border: none; border-radius: 8px;
