@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Import du lieu sinh vien</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif; min-height: 100vh;
+      background: linear-gradient(135deg, #001f3f 0%, #003366 50%, #005BAA 100%); color: #fff;
+    }
+    #login-section { display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    .login-card {
+      background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+      border-radius: 16px; padding: 40px; text-align: center;
+      border: 1px solid rgba(255,255,255,0.2); width: 360px;
+    }
+    .login-logo { font-size: 64px; font-weight: 900; color: #FFD700; text-shadow: 0 0 20px rgba(255,215,0,0.5); margin-bottom: 8px; }
+    .login-card h2 { margin-bottom: 24px; font-weight: 400; font-size: 18px; opacity: 0.9; }
+    .login-card input {
+      width: 100%; padding: 12px 16px; margin-bottom: 12px;
+      border: 1px solid rgba(255,255,255,0.3); border-radius: 8px;
+      background: rgba(255,255,255,0.1); color: #fff; font-size: 15px; outline: none;
+    }
+    .login-card input::placeholder { color: rgba(255,255,255,0.5); }
+    .login-card input:focus { border-color: #FFD700; }
+    .login-card button {
+      width: 100%; padding: 12px; border: none; border-radius: 8px;
+      background: #FFD700; color: #001f3f; font-size: 16px; font-weight: 700; cursor: pointer;
+    }
+    .error-text { color: #ff6b6b; margin-top: 8px; font-size: 14px; min-height: 20px; }
+    #main-section { display: none; }
+    .container { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
+    h1 { text-align: center; margin-bottom: 8px; }
+    .subtitle { text-align: center; opacity: 0.7; margin-bottom: 32px; }
+    .section {
+      background: rgba(255,255,255,0.08); border-radius: 12px; padding: 24px; margin-bottom: 20px;
+    }
+    .section h3 { color: #FFD700; margin-bottom: 12px; }
+    .file-input-wrap {
+      border: 2px dashed rgba(255,215,0,0.4); border-radius: 8px;
+      padding: 40px; text-align: center; cursor: pointer;
+      transition: border-color 0.3s;
+    }
+    .file-input-wrap:hover { border-color: #FFD700; }
+    .file-input-wrap input { display: none; }
+    .btn {
+      padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer;
+      font-size: 15px; font-weight: 700; transition: all 0.2s;
+    }
+    .btn-gold { background: #FFD700; color: #001f3f; }
+    .btn-gold:hover { background: #FFC107; }
+    .btn-danger { background: #e53935; color: #fff; }
+    .progress-bar {
+      height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px;
+      margin-top: 16px; overflow: hidden; display: none;
+    }
+    .progress-fill {
+      height: 100%; background: #FFD700; border-radius: 3px;
+      transition: width 0.3s; width: 0%;
+    }
+    .stats { display: flex; gap: 16px; margin-top: 16px; flex-wrap: wrap; }
+    .stat-box {
+      background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3);
+      border-radius: 8px; padding: 12px 20px; text-align: center; flex: 1; min-width: 120px;
+    }
+    .stat-num { font-size: 28px; font-weight: 900; color: #FFD700; }
+    .stat-label { font-size: 12px; opacity: 0.7; }
+    .preview-table {
+      width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px;
+    }
+    .preview-table th, .preview-table td {
+      padding: 6px 10px; border: 1px solid rgba(255,255,255,0.15); text-align: left;
+    }
+    .preview-table th { background: rgba(255,215,0,0.15); color: #FFD700; }
+    .log { margin-top: 12px; max-height: 200px; overflow-y: auto; font-size: 13px; opacity: 0.8; }
+    .log p { padding: 2px 0; }
+    a { color: #FFD700; }
+  </style>
+</head>
+<body>
+  <div id="login-section"></div>
+  <div id="main-section">
+    <div class="container">
+      <h1>IMPORT DU LIEU SINH VIEN</h1>
+      <p class="subtitle">Nhap danh sach tu file Excel vao Firebase</p>
+
+      <div class="section">
+        <h3>BUOC 1: Chon file Excel</h3>
+        <div class="file-input-wrap" onclick="document.getElementById('file-input').click()">
+          <p id="file-label">Click de chon file Excel (.xlsx, .xls)</p>
+          <input type="file" id="file-input" accept=".xlsx,.xls,.csv" onchange="handleFile(event)">
+        </div>
+      </div>
+
+      <div class="section" id="preview-section" style="display:none">
+        <h3>BUOC 2: Xem truoc du lieu</h3>
+        <div class="stats" id="stats"></div>
+        <div style="overflow-x:auto;max-height:300px;overflow-y:auto;margin-top:12px">
+          <table class="preview-table" id="preview-table"></table>
+        </div>
+      </div>
+
+      <div class="section" id="import-section" style="display:none">
+        <h3>BUOC 3: Import vao Firebase</h3>
+        <p style="margin-bottom:12px;opacity:0.7;">Du lieu cu (neu co) se bi ghi de.</p>
+        <button class="btn btn-gold" id="btn-import" onclick="doImport()">BAT DAU IMPORT</button>
+        <div class="progress-bar" id="progress-bar">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <div class="log" id="log"></div>
+      </div>
+
+      <div style="text-align:center;margin-top:20px">
+        <a href="index.html">Quay ve trang chu</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script>
+    injectLoginForm('Import du lieu');
+    initAuth();
+
+    let parsedData = [];
+
+    function handleFile(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      document.getElementById('file-label').textContent = file.name;
+
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        const data = new Uint8Array(ev.target.result);
+        const wb = XLSX.read(data, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(ws, { defval: '' });
+
+        // Map columns
+        parsedData = [];
+        const colMap = findColumns(json[0]);
+        if (!colMap.mssv) {
+          alert('Khong tim thay cot MSSV/Masv trong file!');
+          return;
+        }
+
+        json.forEach(row => {
+          const mssv = String(row[colMap.mssv] || '').trim();
+          if (!mssv) return;
+          const ho = String(row[colMap.ho] || '').trim();
+          const ten = String(row[colMap.ten] || '').trim();
+          const name = ho && ten ? ho + ' ' + ten : (ho || ten || '');
+          parsedData.push({
+            mssv: mssv,
+            name: name,
+            faculty: String(row[colMap.faculty] || '').trim(),
+            major: String(row[colMap.major] || '').trim()
+          });
+        });
+
+        showPreview();
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function findColumns(firstRow) {
+      const keys = Object.keys(firstRow);
+      const map = { mssv: null, ho: null, ten: null, faculty: null, major: null };
+      keys.forEach(k => {
+        const kl = k.toLowerCase().replace(/\s+/g, '');
+        if (kl.includes('masv') || kl.includes('mssv') || kl === 'masv' || kl === 'mãsv') map.mssv = k;
+        else if (kl === 'ho' || kl === 'họ' || kl.includes('họ')) map.ho = k;
+        else if (kl === 'ten' || kl === 'tên' || kl.includes('tên')) {
+          if (!kl.includes('khoa') && !kl.includes('nganh') && !kl.includes('ngành')) map.ten = k;
+        }
+        if (kl.includes('khoa') && kl.includes('ten') || kl.includes('tênkhoa') || kl === 'tenkhoa' || kl === 'tên khoa') map.faculty = k;
+        else if (kl.includes('khoa') && !map.faculty) map.faculty = k;
+        if (kl.includes('nganh') || kl.includes('ngành') || kl.includes('tênnganh') || kl.includes('têngành')) map.major = k;
+      });
+      // Fallback: if "Tên" not found separately, try combined "Họ và tên" or "Họ tên"
+      if (!map.ho && !map.ten) {
+        keys.forEach(k => {
+          const kl = k.toLowerCase();
+          if (kl.includes('ho') && kl.includes('ten') || kl.includes('họ') && kl.includes('tên')) map.ho = k;
+        });
+      }
+      return map;
+    }
+
+    function showPreview() {
+      document.getElementById('preview-section').style.display = 'block';
+      document.getElementById('import-section').style.display = 'block';
+
+      // Stats
+      const faculties = [...new Set(parsedData.map(d => d.faculty).filter(Boolean))];
+      document.getElementById('stats').innerHTML = `
+        <div class="stat-box"><div class="stat-num">${parsedData.length}</div><div class="stat-label">Sinh vien</div></div>
+        <div class="stat-box"><div class="stat-num">${faculties.length}</div><div class="stat-label">Khoa</div></div>
+      `;
+
+      // Table preview (first 10 rows)
+      const preview = parsedData.slice(0, 10);
+      let html = '<tr><th>STT</th><th>MSSV</th><th>Ho va ten</th><th>Khoa</th><th>Nganh</th></tr>';
+      preview.forEach((d, i) => {
+        html += `<tr><td>${i + 1}</td><td>${d.mssv}</td><td>${d.name}</td><td>${d.faculty}</td><td>${d.major}</td></tr>`;
+      });
+      if (parsedData.length > 10) html += `<tr><td colspan="5" style="text-align:center;opacity:0.5">... va ${parsedData.length - 10} dong nua</td></tr>`;
+      document.getElementById('preview-table').innerHTML = html;
+    }
+
+    async function doImport() {
+      if (parsedData.length === 0) return;
+      if (!confirm('Import ' + parsedData.length + ' sinh vien vao Firebase?')) return;
+
+      const btn = document.getElementById('btn-import');
+      const bar = document.getElementById('progress-bar');
+      const fill = document.getElementById('progress-fill');
+      const log = document.getElementById('log');
+      btn.disabled = true;
+      bar.style.display = 'block';
+      log.innerHTML = '';
+
+      // Build data object
+      const batchSize = 500;
+      const total = parsedData.length;
+      let imported = 0;
+
+      for (let i = 0; i < total; i += batchSize) {
+        const batch = parsedData.slice(i, i + batchSize);
+        const updates = {};
+        batch.forEach(d => {
+          updates[d.mssv] = {
+            name: d.name,
+            faculty: d.faculty,
+            major: d.major,
+            checked_in: false,
+            check_in_order: null,
+            timestamp: null
+          };
+        });
+        await db.ref('students_data').update(updates);
+        imported += batch.length;
+        const pct = Math.round(imported / total * 100);
+        fill.style.width = pct + '%';
+        log.innerHTML += `<p>Da import ${imported}/${total} (${pct}%)</p>`;
+        log.scrollTop = log.scrollHeight;
+      }
+
+      // Reset counter
+      await db.ref('check_in_counter').set(0);
+
+      log.innerHTML += `<p style="color:#00c853;font-weight:700">HOAN TAT! Da import ${total} sinh vien.</p>`;
+      btn.textContent = 'HOAN TAT!';
+      btn.style.background = '#00c853';
+    }
+  </script>
+</body>
+</html>

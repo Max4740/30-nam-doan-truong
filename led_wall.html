@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LED Wall - Ky yeu so</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      height: 100vh; overflow: hidden;
+      background: linear-gradient(135deg, #001233 0%, #001845 30%, #002855 60%, #003366 100%);
+      color: #fff; cursor: none;
+    }
+    #login-section { display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    .login-card {
+      background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+      border-radius: 16px; padding: 40px; text-align: center;
+      border: 1px solid rgba(255,255,255,0.2); width: 360px;
+    }
+    .login-logo { font-size: 64px; font-weight: 900; color: #FFD700; text-shadow: 0 0 20px rgba(255,215,0,0.5); margin-bottom: 8px; }
+    .login-card h2 { margin-bottom: 24px; font-weight: 400; font-size: 18px; opacity: 0.9; }
+    .login-card input {
+      width: 100%; padding: 12px 16px; margin-bottom: 12px;
+      border: 1px solid rgba(255,255,255,0.3); border-radius: 8px;
+      background: rgba(255,255,255,0.1); color: #fff; font-size: 15px; outline: none;
+    }
+    .login-card input::placeholder { color: rgba(255,255,255,0.5); }
+    .login-card input:focus { border-color: #FFD700; }
+    .login-card button {
+      width: 100%; padding: 12px; border: none; border-radius: 8px;
+      background: #FFD700; color: #001f3f; font-size: 16px; font-weight: 700; cursor: pointer;
+    }
+    .error-text { color: #ff6b6b; margin-top: 8px; font-size: 14px; min-height: 20px; }
+
+    #main-section { display: none; width: 100%; height: 100vh; position: relative; }
+    .wall-header {
+      position: absolute; top: 20px; left: 0; right: 0; text-align: center;
+      z-index: 5; pointer-events: none;
+    }
+    .wall-header h1 {
+      font-size: 22px; letter-spacing: 4px; text-transform: uppercase;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+    .wall-header h1 span { color: #FFD700; }
+    .wall-counter {
+      position: absolute; bottom: 20px; right: 30px; z-index: 5;
+      font-size: 14px; opacity: 0.4; pointer-events: none;
+    }
+
+    #sig-wall { width: 100%; height: 100%; position: relative; }
+
+    .sig-item {
+      position: absolute;
+      transition: all 0.3s;
+      pointer-events: none;
+    }
+    .sig-item img {
+      display: block;
+      filter: brightness(1.8) contrast(1.2) drop-shadow(0 0 4px rgba(255,215,0,0.3));
+    }
+    .sig-item.highlight img {
+      filter: brightness(2.2) contrast(1.3) drop-shadow(0 0 15px rgba(255,215,0,0.6));
+      animation: sigGlow 2s ease-out;
+    }
+    .sig-item.vip img {
+      filter: brightness(2) contrast(1.2) drop-shadow(0 0 20px rgba(255,215,0,0.8));
+    }
+    .sig-item.vip.highlight img {
+      animation: sigGlowVip 2.5s ease-out;
+    }
+
+    @keyframes sigGlow {
+      0% { transform: scale(1.3); filter: brightness(3) drop-shadow(0 0 30px rgba(255,215,0,0.8)); }
+      100% { transform: scale(1); filter: brightness(1.8) drop-shadow(0 0 4px rgba(255,215,0,0.3)); }
+    }
+    @keyframes sigGlowVip {
+      0% { transform: scale(1.5); filter: brightness(3.5) drop-shadow(0 0 40px rgba(255,215,0,1)); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); filter: brightness(2) drop-shadow(0 0 20px rgba(255,215,0,0.8)); }
+    }
+  </style>
+</head>
+<body>
+  <div id="login-section"></div>
+  <div id="main-section">
+    <div class="wall-header">
+      <h1><span>Ky yeu so</span> - 30 nam hanh trinh tiep noi</h1>
+    </div>
+    <div id="sig-wall"></div>
+    <div class="wall-counter" id="wall-counter">0 chu ky</div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script>
+    injectLoginForm('LED Wall - Ky yeu so');
+    initAuth(onReady);
+
+    const MAX_DISPLAY = 120;
+    let sigCount = 0;
+    let displayedKeys = new Set();
+
+    function onReady() {
+      // Fullscreen on double-click
+      document.addEventListener('dblclick', () => {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        }
+      });
+
+      // Load existing signatures first
+      db.ref('signatures_stream').orderByChild('timestamp').limitToLast(MAX_DISPLAY).once('value', snap => {
+        snap.forEach(child => {
+          displayedKeys.add(child.key);
+          addSignature(child.val(), false);
+        });
+      });
+
+      // Listen for new signatures
+      db.ref('signatures_stream').orderByChild('timestamp').startAt(Date.now()).on('child_added', snap => {
+        if (displayedKeys.has(snap.key)) return;
+        displayedKeys.add(snap.key);
+        addSignature(snap.val(), true);
+      });
+    }
+
+    function addSignature(data, isNew) {
+      const wall = document.getElementById('sig-wall');
+      const isVip = data.type === 'vip';
+      const baseSize = isVip ? 200 : 120;
+      const w = baseSize + Math.random() * 60;
+      const h = w * 0.5;
+
+      // Random position, avoiding edges
+      const maxX = window.innerWidth - w - 20;
+      const maxY = window.innerHeight - h - 80;
+      const x = 20 + Math.random() * maxX;
+      const y = 60 + Math.random() * maxY;
+
+      const div = document.createElement('div');
+      div.className = 'sig-item' + (isVip ? ' vip' : '') + (isNew ? ' highlight' : '');
+
+      const img = document.createElement('img');
+      img.src = data.image_base64;
+      img.style.width = w + 'px';
+      img.style.height = 'auto';
+      img.style.maxHeight = h + 'px';
+      img.style.objectFit = 'contain';
+
+      div.style.left = x + 'px';
+      div.style.top = y + 'px';
+      div.style.opacity = '0';
+      div.appendChild(img);
+      wall.appendChild(div);
+
+      // Fade in
+      requestAnimationFrame(() => {
+        div.style.opacity = '1';
+      });
+
+      // Remove highlight after 2.5s
+      if (isNew) {
+        setTimeout(() => div.classList.remove('highlight'), 2500);
+      }
+
+      sigCount++;
+      document.getElementById('wall-counter').textContent = sigCount + ' chu ky';
+
+      // Limit displayed signatures
+      const items = wall.querySelectorAll('.sig-item');
+      if (items.length > MAX_DISPLAY) {
+        items[0].remove();
+      }
+    }
+  </script>
+</body>
+</html>

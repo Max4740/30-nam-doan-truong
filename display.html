@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Man hinh chao mung</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;600;700;900&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      height: 100vh; overflow: hidden;
+      background: linear-gradient(135deg, #001233 0%, #001845 25%, #002855 50%, #003366 75%, #004080 100%);
+      color: #fff;
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center;
+      cursor: none;
+    }
+
+    /* === LOGIN === */
+    #login-section {
+      display: flex; justify-content: center; align-items: center;
+      height: 100vh; width: 100%;
+    }
+    .login-card {
+      background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+      border-radius: 16px; padding: 40px; text-align: center;
+      border: 1px solid rgba(255,255,255,0.2); width: 360px;
+    }
+    .login-logo { font-size: 64px; font-weight: 900; color: #FFD700; text-shadow: 0 0 20px rgba(255,215,0,0.5); margin-bottom: 8px; }
+    .login-card h2 { margin-bottom: 24px; font-weight: 400; font-size: 18px; opacity: 0.9; }
+    .login-card input {
+      width: 100%; padding: 12px 16px; margin-bottom: 12px;
+      border: 1px solid rgba(255,255,255,0.3); border-radius: 8px;
+      background: rgba(255,255,255,0.1); color: #fff; font-size: 15px; outline: none;
+    }
+    .login-card input::placeholder { color: rgba(255,255,255,0.5); }
+    .login-card input:focus { border-color: #FFD700; }
+    .login-card button {
+      width: 100%; padding: 12px; border: none; border-radius: 8px;
+      background: #FFD700; color: #001f3f; font-size: 16px; font-weight: 700; cursor: pointer;
+    }
+    .error-text { color: #ff6b6b; margin-top: 8px; font-size: 14px; min-height: 20px; }
+
+    /* === MAIN DISPLAY === */
+    #main-section {
+      display: none; width: 100%; height: 100vh;
+      flex-direction: column; justify-content: center; align-items: center;
+      position: relative;
+    }
+
+    /* Background decorations */
+    .bg-circle {
+      position: absolute; border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,215,0,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .bg-circle.c1 { width: 600px; height: 600px; top: -200px; right: -100px; }
+    .bg-circle.c2 { width: 400px; height: 400px; bottom: -100px; left: -80px; }
+    .bg-circle.c3 { width: 300px; height: 300px; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+
+    /* Waiting state */
+    .waiting {
+      text-align: center; position: relative; z-index: 1;
+    }
+    .waiting .logo-30 {
+      font-size: 120px; font-weight: 900; color: #FFD700;
+      text-shadow: 0 0 40px rgba(255,215,0,0.4), 0 0 80px rgba(255,215,0,0.2);
+      line-height: 1; margin-bottom: 16px;
+      animation: pulse 3s ease-in-out infinite;
+    }
+    .waiting .event-name {
+      font-size: 28px; font-weight: 700; letter-spacing: 4px;
+      text-transform: uppercase; margin-bottom: 8px;
+    }
+    .waiting .event-theme {
+      font-size: 20px; font-weight: 400; opacity: 0.7;
+      font-style: italic;
+    }
+    .waiting .counter-info {
+      margin-top: 32px; font-size: 18px; opacity: 0.6;
+    }
+    .waiting .counter-info span {
+      font-size: 36px; font-weight: 900; color: #FFD700; display: block;
+      margin-top: 4px;
+    }
+
+    /* Welcome card */
+    .welcome-overlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      display: flex; justify-content: center; align-items: center;
+      z-index: 10; opacity: 0; pointer-events: none;
+      transition: opacity 0.4s;
+    }
+    .welcome-overlay.active { opacity: 1; }
+    .welcome-card {
+      text-align: center; padding: 60px 80px;
+      background: radial-gradient(ellipse at center, rgba(0,50,102,0.95) 0%, rgba(0,30,63,0.98) 100%);
+      border: 2px solid rgba(255,215,0,0.5);
+      border-radius: 24px;
+      box-shadow: 0 0 60px rgba(255,215,0,0.2), 0 20px 60px rgba(0,0,0,0.5);
+      max-width: 85vw;
+      animation: cardIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .welcome-label {
+      font-size: 24px; opacity: 0.8; margin-bottom: 8px;
+      letter-spacing: 2px;
+    }
+    .welcome-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 56px; font-weight: 900;
+      color: #FFD700;
+      text-shadow: 0 0 30px rgba(255,215,0,0.4);
+      margin-bottom: 4px; line-height: 1.2;
+    }
+    .welcome-mssv {
+      font-size: 24px; opacity: 0.7; margin-bottom: 20px;
+      letter-spacing: 3px;
+    }
+    .welcome-faculty {
+      font-size: 22px; margin-bottom: 24px; opacity: 0.9;
+    }
+    .welcome-order-wrap {
+      display: inline-block; padding: 12px 40px;
+      background: linear-gradient(135deg, #FFD700, #FFA000);
+      border-radius: 40px; color: #001233;
+    }
+    .welcome-order-label { font-size: 16px; font-weight: 600; }
+    .welcome-order-number { font-size: 52px; font-weight: 900; line-height: 1.1; }
+    .welcome-program {
+      margin-top: 28px; font-size: 14px; opacity: 0.5;
+      text-transform: uppercase; letter-spacing: 3px;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: scale(0.7) translateY(30px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* Sparkle particles */
+    .sparkle {
+      position: absolute; width: 4px; height: 4px;
+      background: #FFD700; border-radius: 50%;
+      pointer-events: none; animation: sparkleAnim 1.5s ease-out forwards;
+    }
+    @keyframes sparkleAnim {
+      0% { opacity: 1; transform: scale(1); }
+      100% { opacity: 0; transform: scale(0) translateY(-60px); }
+    }
+  </style>
+</head>
+<body>
+  <div id="login-section"></div>
+  <div id="main-section">
+    <div class="bg-circle c1"></div>
+    <div class="bg-circle c2"></div>
+    <div class="bg-circle c3"></div>
+
+    <!-- Waiting state -->
+    <div class="waiting" id="waiting">
+      <div class="logo-30">30</div>
+      <div class="event-name">Ky niem 30 nam hanh trinh tiep noi</div>
+      <div class="event-theme">"30 nam - Mot hanh trinh, Trieu niem tin"</div>
+      <div class="counter-info">
+        Da co
+        <span id="w-counter">0</span>
+        nguoi tham du
+      </div>
+    </div>
+
+    <!-- Welcome overlay -->
+    <div class="welcome-overlay" id="welcome-overlay">
+      <div class="welcome-card" id="welcome-card">
+        <div class="welcome-label">Chao mung Dong chi</div>
+        <div class="welcome-name" id="w-name"></div>
+        <div class="welcome-mssv" id="w-mssv"></div>
+        <div class="welcome-faculty" id="w-faculty"></div>
+        <div class="welcome-order-wrap">
+          <div class="welcome-order-label">Nguoi tham du thu</div>
+          <div class="welcome-order-number" id="w-order"></div>
+        </div>
+        <div class="welcome-program">
+          Chuong trinh Ky niem 30 nam hanh trinh tiep noi<br>
+          Chu de: "30 nam - Mot hanh trinh, Trieu niem tin"
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script>
+    injectLoginForm('Man hinh chao mung');
+    initAuth(onReady);
+
+    let hideTimeout = null;
+
+    function onReady() {
+      // Enter fullscreen hint
+      document.addEventListener('dblclick', () => {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        }
+      });
+
+      // Listen counter
+      db.ref('check_in_counter').on('value', snap => {
+        document.getElementById('w-counter').textContent = snap.val() || 0;
+      });
+
+      // Listen last check-in
+      db.ref('last_check_in').on('value', snap => {
+        if (!snap.exists()) return;
+        const data = snap.val();
+        showWelcome(data);
+      });
+    }
+
+    function showWelcome(data) {
+      const overlay = document.getElementById('welcome-overlay');
+      const card = document.getElementById('welcome-card');
+      const waiting = document.getElementById('waiting');
+
+      // Fill data
+      document.getElementById('w-name').textContent = data.name || '';
+      document.getElementById('w-mssv').textContent = data.mssv ? '- ' + data.mssv + ' -' : '';
+      document.getElementById('w-faculty').textContent = data.faculty ? 'Khoa ' + data.faculty : '';
+      document.getElementById('w-order').textContent = data.order || '';
+
+      // Hide elements that have no data
+      document.getElementById('w-mssv').style.display = data.mssv ? 'block' : 'none';
+      document.getElementById('w-faculty').style.display = data.faculty ? 'block' : 'none';
+
+      // Show welcome
+      waiting.style.opacity = '0';
+      overlay.classList.add('active');
+
+      // Re-trigger animation
+      card.style.animation = 'none';
+      card.offsetHeight; // reflow
+      card.style.animation = 'cardIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
+
+      // Sparkles
+      createSparkles();
+
+      // Auto hide after 8 seconds
+      clearTimeout(hideTimeout);
+      hideTimeout = setTimeout(() => {
+        overlay.classList.remove('active');
+        waiting.style.opacity = '1';
+      }, 8000);
+    }
+
+    function createSparkles() {
+      const overlay = document.getElementById('welcome-overlay');
+      for (let i = 0; i < 20; i++) {
+        setTimeout(() => {
+          const s = document.createElement('div');
+          s.className = 'sparkle';
+          s.style.left = Math.random() * 100 + '%';
+          s.style.top = Math.random() * 100 + '%';
+          s.style.width = s.style.height = (Math.random() * 6 + 2) + 'px';
+          overlay.appendChild(s);
+          setTimeout(() => s.remove(), 1500);
+        }, i * 80);
+      }
+    }
+  </script>
+</body>
+</html>

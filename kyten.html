@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Ky ten - Ky yeu so</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif; min-height: 100vh;
+      background: linear-gradient(135deg, #001f3f, #003366, #005BAA); color: #fff;
+      overflow: hidden; touch-action: none;
+    }
+    #login-section { display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    .login-card {
+      background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+      border-radius: 16px; padding: 40px; text-align: center;
+      border: 1px solid rgba(255,255,255,0.2); width: 360px;
+    }
+    .login-logo { font-size: 64px; font-weight: 900; color: #FFD700; text-shadow: 0 0 20px rgba(255,215,0,0.5); margin-bottom: 8px; }
+    .login-card h2 { margin-bottom: 24px; font-weight: 400; font-size: 18px; opacity: 0.9; }
+    .login-card input {
+      width: 100%; padding: 12px 16px; margin-bottom: 12px;
+      border: 1px solid rgba(255,255,255,0.3); border-radius: 8px;
+      background: rgba(255,255,255,0.1); color: #fff; font-size: 15px; outline: none;
+    }
+    .login-card input::placeholder { color: rgba(255,255,255,0.5); }
+    .login-card input:focus { border-color: #FFD700; }
+    .login-card button {
+      width: 100%; padding: 12px; border: none; border-radius: 8px;
+      background: #FFD700; color: #001f3f; font-size: 16px; font-weight: 700; cursor: pointer;
+    }
+    .error-text { color: #ff6b6b; margin-top: 8px; font-size: 14px; min-height: 20px; }
+
+    #main-section { display: none; height: 100vh; flex-direction: column; }
+    .top-bar {
+      padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;
+      background: rgba(0,0,0,0.3); border-bottom: 2px solid #FFD700;
+    }
+    .top-bar h2 { font-size: 16px; }
+    .top-bar h2 span { color: #FFD700; }
+    .type-toggle {
+      display: flex; gap: 0; border-radius: 8px; overflow: hidden; border: 1px solid #FFD700;
+    }
+    .type-btn {
+      padding: 8px 20px; border: none; cursor: pointer; font-size: 14px;
+      font-weight: 600; background: transparent; color: #FFD700; transition: all 0.2s;
+    }
+    .type-btn.active { background: #FFD700; color: #001f3f; }
+
+    .canvas-wrap {
+      flex: 1; display: flex; justify-content: center; align-items: center;
+      padding: 16px; background: rgba(0,0,0,0.2);
+    }
+    canvas {
+      background: #fff; border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      touch-action: none;
+    }
+    .bottom-bar {
+      padding: 12px 20px; display: flex; gap: 12px; background: rgba(0,0,0,0.3);
+    }
+    .bottom-bar button {
+      flex: 1; padding: 14px; border: none; border-radius: 8px;
+      font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-clear { background: rgba(255,255,255,0.2); color: #fff; }
+    .btn-send { background: #FFD700; color: #001f3f; }
+    .btn-send:disabled { opacity: 0.5; }
+    .feedback-toast {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      background: rgba(0,200,83,0.95); padding: 20px 40px; border-radius: 12px;
+      font-size: 20px; font-weight: 700; display: none; z-index: 100;
+      animation: popIn 0.3s;
+    }
+    @keyframes popIn { from { transform: translate(-50%,-50%) scale(0.5); } to { transform: translate(-50%,-50%) scale(1); } }
+  </style>
+</head>
+<body>
+  <div id="login-section"></div>
+  <div id="main-section">
+    <div class="top-bar">
+      <h2><span>KY TEN</span> Ky yeu so 30 nam</h2>
+      <div class="type-toggle">
+        <button class="type-btn active" data-type="normal" onclick="setType('normal',this)">Sinh vien</button>
+        <button class="type-btn" data-type="vip" onclick="setType('vip',this)">Dai bieu</button>
+      </div>
+    </div>
+    <div class="canvas-wrap">
+      <canvas id="sig-canvas"></canvas>
+    </div>
+    <div class="bottom-bar">
+      <button class="btn-clear" onclick="clearPad()">Xoa & ky lai</button>
+      <button class="btn-send" id="btn-send" onclick="sendSignature()">Gui chu ky</button>
+    </div>
+    <div class="feedback-toast" id="toast">Da gui thanh cong!</div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script>
+    injectLoginForm('Ky ten - Ky yeu so');
+    initAuth(onReady);
+
+    let signaturePad;
+    let sigType = 'normal';
+
+    function onReady() {
+      document.getElementById('main-section').style.display = 'flex';
+      setupCanvas();
+      window.addEventListener('resize', setupCanvas);
+    }
+
+    function setupCanvas() {
+      const canvas = document.getElementById('sig-canvas');
+      const wrap = canvas.parentElement;
+      const maxW = Math.min(wrap.clientWidth - 32, 800);
+      const maxH = wrap.clientHeight - 32;
+      canvas.width = maxW;
+      canvas.height = Math.min(maxH, 400);
+
+      if (signaturePad) signaturePad.off();
+      signaturePad = new SignaturePad(canvas, {
+        backgroundColor: 'rgba(255,255,255,1)',
+        penColor: '#001f3f',
+        minWidth: 1.5,
+        maxWidth: 3.5
+      });
+    }
+
+    function setType(type, btn) {
+      sigType = type;
+      document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    function clearPad() {
+      if (signaturePad) signaturePad.clear();
+    }
+
+    async function sendSignature() {
+      if (signaturePad.isEmpty()) {
+        alert('Vui long ky ten truoc!');
+        return;
+      }
+      const btn = document.getElementById('btn-send');
+      btn.disabled = true;
+      btn.textContent = 'Dang gui...';
+
+      try {
+        // Get transparent PNG
+        const canvas = document.getElementById('sig-canvas');
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const ctx = tempCanvas.getContext('2d');
+
+        // Draw signature with transparent background
+        const imgData = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+        const pixels = imgData.data;
+        for (let i = 0; i < pixels.length; i += 4) {
+          // If pixel is white (background), make transparent
+          if (pixels[i] > 240 && pixels[i+1] > 240 && pixels[i+2] > 240) {
+            pixels[i+3] = 0;
+          }
+        }
+        ctx.putImageData(imgData, 0, 0);
+        const base64 = tempCanvas.toDataURL('image/png');
+
+        await db.ref('signatures_stream').push({
+          type: sigType,
+          image_base64: base64,
+          timestamp: Date.now()
+        });
+
+        // Show success
+        const toast = document.getElementById('toast');
+        toast.style.display = 'block';
+        signaturePad.clear();
+        setTimeout(() => {
+          toast.style.display = 'none';
+        }, 2000);
+      } catch (err) {
+        alert('Loi gui: ' + err.message);
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Gui chu ky';
+    }
+  </script>
+</body>
+</html>
